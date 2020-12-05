@@ -38,6 +38,7 @@ public class SocketHandler extends Thread {
                 }
 
                 while (!outQueue.isEmpty()) {
+                    System.out.println("got a thing at outqueue! : " + outQueue.peek());
                     out.println(outQueue.poll());
                 }
             }

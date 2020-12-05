@@ -2,6 +2,7 @@ import java.net.*;
 import java.io.*;
 import java.util.ArrayDeque;
 import java.util.Scanner;
+import java.util.Set;
 
 public class Game {
     private Scanner keyboard;
@@ -62,7 +63,7 @@ public class Game {
 
         System.out.println("Waiting for left.");
         leftSocket = serverSocket.accept();
-        leftHandler = new SocketHandler(rightSocket, rightIn, rightOut);
+        leftHandler = new SocketHandler(leftSocket, leftIn, leftOut);
         leftHandler.start();
         System.out.println("Left client connected from " + leftSocket.getInetAddress().getHostAddress());
 
@@ -85,7 +86,6 @@ public class Game {
         while(leftIn.isEmpty()) {}
 
         String response = leftIn.poll();
-        System.out.println(response);
         if (response.startsWith("connectTo")) {
             String rightIP = response.substring(9);
             System.out.println("Connecting to " + rightIP);
@@ -99,6 +99,8 @@ public class Game {
             rightHandler = new SocketHandler(rightSocket, rightIn, rightOut);
             rightHandler.start();
             System.out.println("Right client connected from " + rightSocket.getInetAddress().getHostAddress());
+        } else {
+            System.out.println("Response makes no sense.");
         }
     }
 
