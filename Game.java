@@ -52,6 +52,7 @@ public class Game {
     public void createGame() throws IOException {
         serverSocket = new ServerSocket(PORT);
         System.out.println("Server socket hosted on " + InetAddress.getLocalHost() + ", port " + PORT);
+        
         System.out.println("Waiting for right.");
         rightSocket = serverSocket.accept();
         rightHandler = new SocketHandler(rightSocket, rightIn, rightOut);
@@ -73,6 +74,9 @@ public class Game {
     }
 
     public void joinGame() throws IOException {
+        serverSocket = new ServerSocket(PORT);
+        System.out.println("Server socket hosted on " + InetAddress.getLocalHost() + ", port " + PORT);
+
         System.out.print("Insert IP to connect to: ");
         leftSocket = new Socket(keyboard.nextLine(), PORT);
         leftHandler = new SocketHandler(leftSocket, leftIn, leftOut);
