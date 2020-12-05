@@ -87,7 +87,7 @@ public class Game {
 
         String response = leftIn.poll();
         if (response.startsWith("connectTo")) {
-            String rightIP = response.substring(9);
+            String rightIP = response.substring(10);
             System.out.println("Connecting to " + rightIP);
             rightSocket = new Socket(rightIP, PORT);
             rightHandler = new SocketHandler(rightSocket, rightIn, rightOut);
