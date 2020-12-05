@@ -11,10 +11,13 @@ public class SocketHandler extends Thread {
     private ArrayDeque<String> inQueue;
     private ArrayDeque<String> outQueue;
 
+    private boolean running;
+
     public SocketHandler(Socket socket, ArrayDeque<String> inQueue, ArrayDeque<String> outQueue) {
         this.socket = socket;
         this.inQueue = inQueue;
         this.outQueue = outQueue;
+        this.running = true;
     }
 
     public void run() {
@@ -25,7 +28,7 @@ public class SocketHandler extends Thread {
             System.out.println("Connected: " + socket.getInetAddress());
 
             String input;
-            while (true) {
+            while (running) {
                 if (in.ready()) {
                     input = in.readLine();
 
@@ -38,7 +41,12 @@ public class SocketHandler extends Thread {
                 }
 
                 while (!outQueue.isEmpty()) {
-                    out.println(outQueue.poll());
+                    String output = outQueue.poll();
+                    if (output.equals("killThread")) {
+                        running = false;
+                    } else {
+                        out.println(output);
+                    }
                 }
             }
     

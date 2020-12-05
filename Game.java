@@ -2,11 +2,11 @@ import java.net.*;
 import java.io.*;
 import java.util.ArrayDeque;
 import java.util.Scanner;
-import java.util.Set;
 
 public class Game {
     private Scanner keyboard;
     private final int PORT = 25565;
+    private final String DEFIP = "192.168.56.1";
 
     private ServerSocket serverSocket;
     private Socket rightSocket;
@@ -45,6 +45,9 @@ public class Game {
     }
 
     public void stop() throws IOException {
+        leftOut.add("killThread");
+        rightOut.add("killThread");
+
         serverSocket.close();
         rightSocket.close();
         leftSocket.close();
@@ -79,7 +82,10 @@ public class Game {
         System.out.println("Server socket hosted on " + InetAddress.getLocalHost() + ", port " + PORT);
 
         System.out.print("Insert IP to connect to: ");
-        leftSocket = new Socket(keyboard.nextLine(), PORT);
+        String ip = keyboard.nextLine();
+        ip = ip.isEmpty() ? DEFIP : ip; // default IP to speed up testing during development
+
+        leftSocket = new Socket(ip, PORT);
         leftHandler = new SocketHandler(leftSocket, leftIn, leftOut);
         leftHandler.start();
         System.out.println("Connected to left at " + leftSocket.getInetAddress().getHostAddress());
@@ -93,6 +99,7 @@ public class Game {
             rightHandler = new SocketHandler(rightSocket, rightIn, rightOut);
             rightHandler.start();
             System.out.println("Connected to right at " + leftSocket.getInetAddress().getHostAddress());
+            leftOut.add("ok");
         } else if (response.equals("waitForConnection")) {
             System.out.println("Waiting for right.");
             rightSocket = serverSocket.accept();
