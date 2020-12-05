@@ -52,7 +52,7 @@ public class Game {
     public void createGame() throws IOException {
         serverSocket = new ServerSocket(PORT);
         System.out.println("Server socket hosted on " + InetAddress.getLocalHost() + ", port " + PORT);
-        
+
         System.out.println("Waiting for right.");
         rightSocket = serverSocket.accept();
         rightHandler = new SocketHandler(rightSocket, rightIn, rightOut);
@@ -85,6 +85,7 @@ public class Game {
         while(leftIn.isEmpty()) {}
 
         String response = leftIn.poll();
+        System.out.println(response);
         if (response.startsWith("connectTo")) {
             String rightIP = response.substring(9);
             System.out.println("Connecting to " + rightIP);

@@ -22,7 +22,7 @@ public class SocketHandler extends Thread {
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             
-            System.out.println("Client connected: " + socket.getInetAddress());
+            System.out.println("Connected: " + socket.getInetAddress());
 
             String input;
             while (true) {
@@ -42,7 +42,7 @@ public class SocketHandler extends Thread {
                 }
             }
     
-            System.out.println("Client disconnected: " + socket.getInetAddress());
+            System.out.println("Disconnected: " + socket.getInetAddress());
 
             in.close();
             out.close();
