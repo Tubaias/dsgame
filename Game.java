@@ -4,6 +4,7 @@ import java.util.Scanner;
 
 public class Game {
     private Scanner input;
+    ServerSocket serverSocket;
     private final int PORT = 25565;
 
     public Game(Scanner input) {
@@ -22,16 +23,31 @@ public class Game {
         }
     }
 
+    public void stop() throws IOException {
+        serverSocket.close();
+    }
+
     private void sendMode() throws IOException {
         System.out.println("Insert ip address to connect to:");
         String ip = input.nextLine();
-        Socket clientSocket = new Socket(ip, PORT);
+        Socket clientSocket;
+        try {
+            clientSocket = new Socket(ip, PORT);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return;
+        }
+        
         PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
         BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         System.out.println("Connected. Insert message:");
 
-        out.println(input.nextLine());
-        System.out.println(in.readLine());
+        String line = "";
+        while (!line.equals("quit")) {
+            System.out.println("Insert message:");
+            line = input.nextLine();
+            out.println(line);
+        }
 
         in.close();
         out.close();
@@ -39,19 +55,44 @@ public class Game {
     }
 
     private void receiveMode() throws IOException {
-        ServerSocket serverSocket = new ServerSocket(PORT);
+        serverSocket = new ServerSocket(PORT);
         System.out.println("Server socket hosted on " + InetAddress.getLocalHost() + ", port " + PORT);
-        Socket clientSocket = serverSocket.accept();
-        PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-        BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        System.out.println("Connected.");
+        
+        while (true) {
+            new ClientThread(serverSocket.accept()).start();
+        }
+    }
 
-        System.out.println(in.readLine());
-        out.println(input.nextLine());
+    private static class ClientThread extends Thread {
+        private Socket socket;
+        private PrintWriter out;
+        private BufferedReader in;
+    
+        public ClientThread(Socket socket) {
+            this.socket = socket;
+        }
+    
+        public void run() {
+            try {
+                out = new PrintWriter(socket.getOutputStream(), true);
+                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                
+                String input;
+                while ((input = in.readLine()) != null) {
+                    System.out.println("got input: " + input);
 
-        in.close();
-        out.close();
-        serverSocket.close();
-        clientSocket.close();
+                    if (input.equals("quit")) {
+                        break;
+                    }
+                }
+        
+                in.close();
+                out.close();
+                socket.close();
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
+                return;
+            }
+        }
     }
 }
