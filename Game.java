@@ -72,7 +72,9 @@ public class Game {
 
         System.out.println("Telling left to connect to right.");
         leftOut.add("connectTo " + rightSocket.getInetAddress().getHostAddress());
-        while(leftIn.isEmpty()) {}
+        while(leftIn.isEmpty()) {
+            System.out.println("waiting");
+        }
 
         System.out.println("Left response: " + leftIn.poll());
     }
@@ -92,15 +94,14 @@ public class Game {
         while(leftIn.isEmpty()) {}
 
         String response = leftIn.poll();
-        if (response.startsWith("connectTo")) {
-            String rightIP = response.substring(10);
-            System.out.println("Connecting to " + rightIP);
-            rightSocket = new Socket(rightIP, PORT);
+        if (response.equals("waitForConnection")) {
+            System.out.println("Waiting for right.");
+            rightSocket = serverSocket.accept();
             rightHandler = new SocketHandler(rightSocket, rightIn, rightOut);
             rightHandler.start();
-            System.out.println("Connected to right at " + leftSocket.getInetAddress().getHostAddress());
-            leftOut.add("ok");
-        } else if (response.equals("waitForConnection")) {
+            System.out.println("Right client connected from " + rightSocket.getInetAddress().getHostAddress());
+        } else if (response.startsWith("connectTo")) {
+            // swapping pointers for consistency
             rightSocket = leftSocket;
             rightHandler = leftHandler;
             rightIn = leftIn;
@@ -108,11 +109,13 @@ public class Game {
             leftIn = new ArrayDeque<>();
             leftOut = new ArrayDeque<>();
 
-            System.out.println("Waiting for right.");
-            leftSocket = serverSocket.accept();
+            String leftIP = response.substring(10);
+            System.out.println("Connecting to " + leftIP);
+            leftSocket = new Socket(leftIP, PORT);
             leftHandler = new SocketHandler(leftSocket, leftIn, leftOut);
             leftHandler.start();
-            System.out.println("Left client connected from " + rightSocket.getInetAddress().getHostAddress());
+            System.out.println("Connected to left at " + leftSocket.getInetAddress().getHostAddress());
+            leftOut.add("ok");
         } else {
             System.out.println("Response makes no sense.");
         }
