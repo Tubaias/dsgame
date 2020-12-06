@@ -136,39 +136,43 @@ public class Game {
         System.out.println("Gaming time started. Exit with 'exit'.");
         while (true) {
             while(!leftHandler.in.isEmpty()) {
-                String input = leftHandler.in.poll();
-                handleInput(input);
-                System.out.println("LEFT: " + input);
+                String msg = leftHandler.in.poll();
+                handleMessage(msg, "LEFT");
             }
 
             while(!rightHandler.in.isEmpty()) {
-                String input = rightHandler.in.poll();
-                handleInput(input);
-                System.out.println("RIGHT: " + input);
+                String msg = rightHandler.in.poll();
+                handleMessage(msg, "RIGHT");
             }
 
             if (System.in.available() > 0) {
                 String command = keyboard.nextLine();
-                if (command.equals("exit")) {
-                    return;
-                }
-
-                if (command.equals("playerlist")) {
-                    makePlayerList("");
-                }
-
-                if (command.startsWith("left")) {
-                    leftHandler.out.add(command.substring(5));
-                } else if (command.startsWith("right")) {
-                    rightHandler.out.add(command.substring(6));
-                }
+                handleCommand(command);
             }
         }
     }
 
-    private void handleInput(String input) {
-        if (input.startsWith("playerList")) {
-            makePlayerList(input);
+    private void handleMessage(String msg, String source) {
+        if (msg.startsWith("playerList")) {
+            makePlayerList(msg);
+        } else {
+            System.out.println(source + ": " + msg);
+        }
+    }
+
+    private void handleCommand(String command) {
+        if (command.equals("exit")) {
+            return;
+        }
+
+        if (command.equals("playerlist")) {
+            makePlayerList("");
+        }
+
+        if (command.startsWith("left")) {
+            leftHandler.out.add(command.substring(5));
+        } else if (command.startsWith("right")) {
+            rightHandler.out.add(command.substring(6));
         }
     }
 
