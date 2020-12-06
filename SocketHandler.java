@@ -7,57 +7,58 @@ import java.util.logging.Logger;
 
 public class SocketHandler extends Thread {
     private Socket socket;
-    private PrintWriter out;
-    private BufferedReader in;
-    private ConcurrentLinkedDeque<String> inQueue;
-    private ConcurrentLinkedDeque<String> outQueue;
+    private PrintWriter outWriter;
+    private BufferedReader inReader;
+    public ConcurrentLinkedDeque<String> in;
+    public ConcurrentLinkedDeque<String> out;
     private Logger logger;
 
     private boolean running;
 
-    public SocketHandler(Socket socket, ConcurrentLinkedDeque<String> inQueue, ConcurrentLinkedDeque<String> outQueue, Logger logger) {
+    public SocketHandler(Socket socket, Logger logger) {
         this.socket = socket;
-        this.inQueue = inQueue;
-        this.outQueue = outQueue;
         this.logger = logger;
+
+        this.in = new ConcurrentLinkedDeque<>();
+        this.out = new ConcurrentLinkedDeque<>();
         this.running = true;
     }
 
     public void run() {
         try {
-            out = new PrintWriter(socket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            outWriter = new PrintWriter(socket.getOutputStream(), true);
+            inReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             
             logger.info("CONNECTED TO: " + socket.getInetAddress());
 
             String input;
             while (running) {
-                if (in.ready()) {
-                    input = in.readLine();
+                if (inReader.ready()) {
+                    input = inReader.readLine();
 
                     if (input == null || input.equals("quit")) {
                         break;
                     }
 
                     logger.info("FROM: " + socket.getInetAddress() + " : " + input);
-                    inQueue.add(input);
+                    in.add(input);
                 }
 
-                while (!outQueue.isEmpty()) {
-                    String output = outQueue.poll();
+                while (!out.isEmpty()) {
+                    String output = out.poll();
                     if (output.equals("killThread")) {
                         running = false;
                     } else {
                         logger.info("TO: " + socket.getInetAddress() + " : " + output);
-                        out.println(output);
+                        outWriter.println(output);
                     }
                 }
             }
     
             logger.info("DISCONNECTED FROM: " + socket.getInetAddress());
 
-            in.close();
-            out.close();
+            inReader.close();
+            outWriter.close();
             socket.close();
         } catch (Exception e) {
             logger.severe(e.getMessage());

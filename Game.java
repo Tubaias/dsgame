@@ -1,7 +1,5 @@
 import java.net.*;
-import java.io.*;
 import java.util.Scanner;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
@@ -17,18 +15,10 @@ public class Game {
     private Socket leftSocket;
     private SocketHandler rightHandler;
     private SocketHandler leftHandler;
-    private ConcurrentLinkedDeque<String> rightIn;
-    private ConcurrentLinkedDeque<String> rightOut;
-    private ConcurrentLinkedDeque<String> leftIn;
-    private ConcurrentLinkedDeque<String> leftOut;
     private Logger logger;
 
-    public Game(Scanner input) throws Exception {
-        this.keyboard = input;
-        rightIn = new ConcurrentLinkedDeque<>();
-        rightOut = new ConcurrentLinkedDeque<>();
-        leftIn = new ConcurrentLinkedDeque<>();
-        leftOut = new ConcurrentLinkedDeque<>();
+    public Game(Scanner scanner) throws Exception {
+        this.keyboard = scanner;
 
         FileHandler logHandler = new FileHandler(LOGFILE, true);
         logger = Logger.getLogger("gameLogger");
@@ -54,8 +44,8 @@ public class Game {
     }
 
     public void stop() throws Exception {
-        leftOut.add("killThread");
-        rightOut.add("killThread");
+        leftHandler.out.add("killThread");
+        rightHandler.out.add("killThread");
         Thread.sleep(300);
 
         serverSocket.close();
@@ -74,24 +64,24 @@ public class Game {
 
         System.out.println("Waiting for right.");
         rightSocket = serverSocket.accept();
-        rightHandler = new SocketHandler(rightSocket, rightIn, rightOut, logger);
+        rightHandler = new SocketHandler(rightSocket, logger);
         rightHandler.start();
-        rightOut.add("waitForConnection");
+        rightHandler.out.add("waitForConnection");
         System.out.println("Right client connected from " + rightSocket.getInetAddress().getHostAddress());
 
         System.out.println("Waiting for left.");
         leftSocket = serverSocket.accept();
-        leftHandler = new SocketHandler(leftSocket, leftIn, leftOut, logger);
+        leftHandler = new SocketHandler(leftSocket, logger);
         leftHandler.start();
         System.out.println("Left client connected from " + leftSocket.getInetAddress().getHostAddress());
 
         System.out.println("Telling left to connect to right.");
-        leftOut.add("connectTo " + rightSocket.getInetAddress().getHostAddress());
-        while(leftIn.isEmpty()) {
+        leftHandler.out.add("connectTo " + rightSocket.getInetAddress().getHostAddress());
+        while(leftHandler.in.isEmpty()) {
             Thread.sleep(100);
         }
 
-        System.out.println("Left response: " + leftIn.poll());
+        System.out.println("Left response: " + leftHandler.in.poll());
     }
 
     public void joinGame() throws Exception {
@@ -103,36 +93,32 @@ public class Game {
         ip = ip.isEmpty() ? DEFIP : ip; // default IP to speed up testing during development
 
         leftSocket = new Socket(ip, PORT);
-        leftHandler = new SocketHandler(leftSocket, leftIn, leftOut, logger);
+        leftHandler = new SocketHandler(leftSocket, logger);
         leftHandler.start();
         System.out.println("Connected at " + leftSocket.getInetAddress().getHostAddress());
-        while(leftIn.isEmpty()) {
+        while(leftHandler.in.isEmpty()) {
             Thread.sleep(100);
         }
 
-        String response = leftIn.poll();
+        String response = leftHandler.in.poll();
         if (response.equals("waitForConnection")) {
             System.out.println("Waiting for right.");
             rightSocket = serverSocket.accept();
-            rightHandler = new SocketHandler(rightSocket, rightIn, rightOut, logger);
+            rightHandler = new SocketHandler(rightSocket, logger);
             rightHandler.start();
             System.out.println("Right client connected from " + rightSocket.getInetAddress().getHostAddress());
         } else if (response.startsWith("connectTo")) {
             // swapping pointers for consistency
             rightSocket = leftSocket;
             rightHandler = leftHandler;
-            rightIn = leftIn;
-            rightOut = leftOut;
-            leftIn = new ConcurrentLinkedDeque<>();
-            leftOut = new ConcurrentLinkedDeque<>();
 
             String leftIP = response.substring(10);
             System.out.println("Connecting to " + leftIP);
             leftSocket = new Socket(leftIP, PORT);
-            leftHandler = new SocketHandler(leftSocket, leftIn, leftOut, logger);
+            leftHandler = new SocketHandler(leftSocket, logger);
             leftHandler.start();
             System.out.println("Connected to left at " + leftSocket.getInetAddress().getHostAddress());
-            rightOut.add("ok");
+            rightHandler.out.add("ok");
         } else {
             System.out.println("Response makes no sense.");
         }
@@ -142,16 +128,16 @@ public class Game {
         while (true) {
             System.out.println("Gaming time started. Exit with 'exit'.");
 
-            String input = leftIn.poll();
+            String input = leftHandler.in.poll();
             while(input != null) {
                 System.out.println("LEFT: " + input);
-                input = leftIn.poll();
+                input = leftHandler.in.poll();
             }
 
-            input = rightIn.poll();
+            input = rightHandler.in.poll();
             while(input != null) {
                 System.out.println("RIGHT: " + input);
-                input = rightIn.poll();
+                input = rightHandler.in.poll();
             }
 
             String command = keyboard.nextLine();
@@ -160,9 +146,9 @@ public class Game {
             }
 
             if (command.startsWith("left")) {
-                leftOut.add(command.substring(5));
+                leftHandler.out.add(command.substring(5));
             } else if (command.startsWith("right")) {
-                rightOut.add(command.substring(6));
+                rightHandler.out.add(command.substring(6));
             }
         }
     }
