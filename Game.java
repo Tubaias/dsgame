@@ -2,29 +2,37 @@ import java.net.*;
 import java.io.*;
 import java.util.ArrayDeque;
 import java.util.Scanner;
+import java.util.logging.FileHandler;
+import java.util.logging.Handler;
+import java.util.logging.Logger;
 
 public class Game {
     private Scanner keyboard;
     private final int PORT = 25565;
     private final String DEFIP = "192.168.56.1";
+    private final String LOGFILE = "gamelog.log";
 
     private ServerSocket serverSocket;
     private Socket rightSocket;
     private Socket leftSocket;
     private SocketHandler rightHandler;
     private SocketHandler leftHandler;
-
     private ArrayDeque<String> rightIn;
     private ArrayDeque<String> rightOut;
     private ArrayDeque<String> leftIn;
     private ArrayDeque<String> leftOut;
+    private Logger logger;
 
-    public Game(Scanner input) {
+    public Game(Scanner input) throws Exception {
         this.keyboard = input;
         rightIn = new ArrayDeque<>();
         rightOut = new ArrayDeque<>();
         leftIn = new ArrayDeque<>();
         leftOut = new ArrayDeque<>();
+
+        FileHandler logHandler = new FileHandler(LOGFILE, true);
+        logger = Logger.getLogger("gameLogger");
+        logger.addHandler(logHandler);
     }
 
     public void start() throws Exception {
@@ -51,6 +59,11 @@ public class Game {
         serverSocket.close();
         rightSocket.close();
         leftSocket.close();
+
+        for (Handler h : logger.getHandlers()) {
+            logger.removeHandler(h);
+            h.close();
+        }
     }
 
     public void createGame() throws Exception {
@@ -59,14 +72,14 @@ public class Game {
 
         System.out.println("Waiting for right.");
         rightSocket = serverSocket.accept();
-        rightHandler = new SocketHandler(rightSocket, rightIn, rightOut);
+        rightHandler = new SocketHandler(rightSocket, rightIn, rightOut, logger);
         rightHandler.start();
         rightOut.add("waitForConnection");
         System.out.println("Right client connected from " + rightSocket.getInetAddress().getHostAddress());
 
         System.out.println("Waiting for left.");
         leftSocket = serverSocket.accept();
-        leftHandler = new SocketHandler(leftSocket, leftIn, leftOut);
+        leftHandler = new SocketHandler(leftSocket, leftIn, leftOut, logger);
         leftHandler.start();
         System.out.println("Left client connected from " + leftSocket.getInetAddress().getHostAddress());
 
@@ -88,7 +101,7 @@ public class Game {
         ip = ip.isEmpty() ? DEFIP : ip; // default IP to speed up testing during development
 
         leftSocket = new Socket(ip, PORT);
-        leftHandler = new SocketHandler(leftSocket, leftIn, leftOut);
+        leftHandler = new SocketHandler(leftSocket, leftIn, leftOut, logger);
         leftHandler.start();
         System.out.println("Connected at " + leftSocket.getInetAddress().getHostAddress());
         while(leftIn.isEmpty()) {
@@ -99,7 +112,7 @@ public class Game {
         if (response.equals("waitForConnection")) {
             System.out.println("Waiting for right.");
             rightSocket = serverSocket.accept();
-            rightHandler = new SocketHandler(rightSocket, rightIn, rightOut);
+            rightHandler = new SocketHandler(rightSocket, rightIn, rightOut, logger);
             rightHandler.start();
             System.out.println("Right client connected from " + rightSocket.getInetAddress().getHostAddress());
         } else if (response.startsWith("connectTo")) {
@@ -114,7 +127,7 @@ public class Game {
             String leftIP = response.substring(10);
             System.out.println("Connecting to " + leftIP);
             leftSocket = new Socket(leftIP, PORT);
-            leftHandler = new SocketHandler(leftSocket, leftIn, leftOut);
+            leftHandler = new SocketHandler(leftSocket, leftIn, leftOut, logger);
             leftHandler.start();
             System.out.println("Connected to left at " + leftSocket.getInetAddress().getHostAddress());
             rightOut.add("ok");
@@ -126,6 +139,15 @@ public class Game {
     private void gameLoop() {
         while (true) {
             System.out.println("Gaming time started. Exit with 'exit'.");
+
+            while(!leftIn.isEmpty()) {
+                System.out.println("LEFT: " + leftIn.poll());
+            }
+
+            while(!rightIn.isEmpty()) {
+                System.out.println("RIGHT: " + rightIn.poll());
+            }
+
             String command = keyboard.nextLine();
             if (command.equals("exit")) {
                 return;
@@ -135,7 +157,7 @@ public class Game {
                 leftOut.add(command.substring(5));
             } else if (command.startsWith("right")) {
                 rightOut.add(command.substring(6));
-            } 
+            }
         }
     }
 }

@@ -3,6 +3,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayDeque;
+import java.util.logging.Logger;
 
 public class SocketHandler extends Thread {
     private Socket socket;
@@ -10,13 +11,15 @@ public class SocketHandler extends Thread {
     private BufferedReader in;
     private ArrayDeque<String> inQueue;
     private ArrayDeque<String> outQueue;
+    private Logger logger;
 
     private boolean running;
 
-    public SocketHandler(Socket socket, ArrayDeque<String> inQueue, ArrayDeque<String> outQueue) {
+    public SocketHandler(Socket socket, ArrayDeque<String> inQueue, ArrayDeque<String> outQueue, Logger logger) {
         this.socket = socket;
         this.inQueue = inQueue;
         this.outQueue = outQueue;
+        this.logger = logger;
         this.running = true;
     }
 
@@ -25,7 +28,7 @@ public class SocketHandler extends Thread {
             out = new PrintWriter(socket.getOutputStream(), true);
             in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             
-            System.out.println("Connected: " + socket.getInetAddress());
+            logger.info("CONNECTED TO: " + socket.getInetAddress());
 
             String input;
             while (running) {
@@ -36,8 +39,8 @@ public class SocketHandler extends Thread {
                         break;
                     }
 
+                    logger.info("FROM: " + socket.getInetAddress() + " : " + input);
                     inQueue.add(input);
-                    System.out.println(socket.getInetAddress() + ": " + input);
                 }
 
                 while (!outQueue.isEmpty()) {
@@ -45,18 +48,19 @@ public class SocketHandler extends Thread {
                     if (output.equals("killThread")) {
                         running = false;
                     } else {
+                        logger.info("TO: " + socket.getInetAddress() + " : " + output);
                         out.println(output);
                     }
                 }
             }
     
-            System.out.println("Disconnected: " + socket.getInetAddress());
+            logger.info("DISCONNECTED FROM: " + socket.getInetAddress());
 
             in.close();
             out.close();
             socket.close();
         } catch (Exception e) {
-            System.err.println(e.getMessage());
+            logger.severe(e.getMessage());
             return;
         }
     }
