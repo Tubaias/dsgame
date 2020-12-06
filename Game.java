@@ -175,27 +175,25 @@ public class Game {
     private void makePlayerList(String input) {
         if (input.isEmpty()) {
             playerList.clear();
-            playerList.add("firstroundindicator");
+            playerList.add(null);
             leftHandler.out.add("playerList," + name);
         } else if (!input.contains(name)) {
             playerList.clear();
-            playerList.add("firstroundindicator");
+            playerList.add(null);
             leftHandler.out.add(input + "," + name);
-        } else {
-            if (!playerList.isEmpty()) {
-                leftHandler.out.add(input);
-                playerList.clear();
-            } else {
-                for (String str : input.split(",")) {
-                    if (!str.equals("playerList")) {
-                        playerList.add(str);
-                    }
-                }
+        } else if (playerList.get(0) == null) {
+            leftHandler.out.add(input);
+            playerList.clear();
 
-                System.out.println("Player list: ");
-                for (int i = 0; i < playerList.size(); i++) {
-                    System.out.println(i + ": " + playerList.get(i));
+            for (String str : input.split(",")) {
+                if (!str.equals("playerList")) {
+                    playerList.add(str);
                 }
+            }
+
+            System.out.println("Player list: ");
+            for (int i = 0; i < playerList.size(); i++) {
+                System.out.println(i + ": " + playerList.get(i));
             }
         }
     }
