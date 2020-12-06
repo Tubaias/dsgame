@@ -1,4 +1,5 @@
 import java.net.*;
+import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -17,16 +18,23 @@ public class Game {
     private SocketHandler leftHandler;
     private Logger logger;
 
+    private String name;
+    private ArrayList<String> playerList;
+
     public Game(Scanner scanner) throws Exception {
         this.keyboard = scanner;
 
         FileHandler logHandler = new FileHandler(LOGFILE, true);
-        logger = Logger.getLogger("gameLogger");
-        logger.setUseParentHandlers(false);
-        logger.addHandler(logHandler);
+        this.logger = Logger.getLogger("gameLogger");
+        this.logger.setUseParentHandlers(false);
+        this.logger.addHandler(logHandler);
+        this.name = "tempname";
+        playerList = new ArrayList<>();
     }
 
     public void start() throws Exception {
+        System.out.print("Insert name: ");
+        name = keyboard.nextLine();
         System.out.println("Create or join?");
         String command = keyboard.nextLine();
         if (command.startsWith("c")) {
@@ -129,11 +137,13 @@ public class Game {
         while (true) {
             while(!leftHandler.in.isEmpty()) {
                 String input = leftHandler.in.poll();
+                handleInput(input);
                 System.out.println("LEFT: " + input);
             }
 
             while(!rightHandler.in.isEmpty()) {
                 String input = rightHandler.in.poll();
+                handleInput(input);
                 System.out.println("RIGHT: " + input);
             }
 
@@ -143,10 +153,48 @@ public class Game {
                     return;
                 }
 
+                if (command.equals("playerlist")) {
+                    makePlayerList("");
+                }
+
                 if (command.startsWith("left")) {
                     leftHandler.out.add(command.substring(5));
                 } else if (command.startsWith("right")) {
                     rightHandler.out.add(command.substring(6));
+                }
+            }
+        }
+    }
+
+    private void handleInput(String input) {
+        if (input.startsWith("playerList")) {
+            makePlayerList(input);
+        }
+    }
+
+    private void makePlayerList(String input) {
+        if (input.isEmpty()) {
+            playerList.clear();
+            playerList.add("firstroundindicator");
+            leftHandler.out.add("playerList," + name);
+        } else if (!input.contains(name)) {
+            playerList.clear();
+            playerList.add("firstroundindicator");
+            leftHandler.out.add(input + "," + name);
+        } else {
+            if (!playerList.isEmpty()) {
+                leftHandler.out.add(input);
+                playerList.clear();
+            } else {
+                for (String str : input.split(",")) {
+                    if (!str.equals("playerList")) {
+                        playerList.add(str);
+                    }
+                }
+
+                System.out.println("Player list: ");
+                for (int i = 0; i < playerList.size(); i++) {
+                    System.out.println(i + ": " + playerList.get(i));
                 }
             }
         }
