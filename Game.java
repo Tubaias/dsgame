@@ -137,9 +137,12 @@ public class Game {
         }
     }
 
-    private void gameLoop() {
+    private void gameLoop() throws Exception {
         while (true) {
             System.out.println("Gaming time started. Exit with 'exit'.");
+
+            // threads are a mess
+            Thread.sleep(100);
 
             while(!leftIn.isEmpty()) {
                 System.out.println("LEFT: " + leftIn.poll());
