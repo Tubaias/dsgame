@@ -53,9 +53,10 @@ public class Game {
         }
     }
 
-    public void stop() throws IOException {
+    public void stop() throws Exception {
         leftOut.add("killThread");
         rightOut.add("killThread");
+        Thread.sleep(300);
 
         serverSocket.close();
         rightSocket.close();
@@ -141,12 +142,16 @@ public class Game {
         while (true) {
             System.out.println("Gaming time started. Exit with 'exit'.");
 
-            while(!leftIn.isEmpty()) {
-                System.out.println("LEFT: " + leftIn.poll());
+            String input = leftIn.poll();
+            while(input != null) {
+                System.out.println("LEFT: " + input);
+                input = leftIn.poll();
             }
 
-            while(!rightIn.isEmpty()) {
-                System.out.println("RIGHT: " + rightIn.poll());
+            input = rightIn.poll();
+            while(input != null) {
+                System.out.println("RIGHT: " + input);
+                input = rightIn.poll();
             }
 
             String command = keyboard.nextLine();
