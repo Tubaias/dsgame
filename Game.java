@@ -10,7 +10,7 @@ public class Game {
     private Scanner keyboard;
     private final int PORT = 25565;
     private final String DEFIP = "192.168.56.1";
-    private final String LOGFILE = "gamelog.log";
+    private final String LOGFILE = "log.log";
 
     private ServerSocket serverSocket;
     private Socket rightSocket;
@@ -32,6 +32,7 @@ public class Game {
 
         FileHandler logHandler = new FileHandler(LOGFILE, true);
         logger = Logger.getLogger("gameLogger");
+        logger.setUseParentHandlers(false);
         logger.addHandler(logHandler);
     }
 
