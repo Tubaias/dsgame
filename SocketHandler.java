@@ -9,8 +9,8 @@ public class SocketHandler extends Thread {
     private Socket socket;
     private PrintWriter out;
     private BufferedReader in;
-    private ArrayDeque<String> inQueue;
-    private ArrayDeque<String> outQueue;
+    private volatile ArrayDeque<String> inQueue;
+    private volatile ArrayDeque<String> outQueue;
     private Logger logger;
 
     private boolean running;

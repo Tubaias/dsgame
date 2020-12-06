@@ -17,10 +17,10 @@ public class Game {
     private Socket leftSocket;
     private SocketHandler rightHandler;
     private SocketHandler leftHandler;
-    private ArrayDeque<String> rightIn;
-    private ArrayDeque<String> rightOut;
-    private ArrayDeque<String> leftIn;
-    private ArrayDeque<String> leftOut;
+    private volatile ArrayDeque<String> rightIn;
+    private volatile ArrayDeque<String> rightOut;
+    private volatile ArrayDeque<String> leftIn;
+    private volatile ArrayDeque<String> leftOut;
     private Logger logger;
 
     public Game(Scanner input) throws Exception {
@@ -140,9 +140,6 @@ public class Game {
     private void gameLoop() throws Exception {
         while (true) {
             System.out.println("Gaming time started. Exit with 'exit'.");
-
-            // threads are a mess
-            Thread.sleep(100);
 
             while(!leftIn.isEmpty()) {
                 System.out.println("LEFT: " + leftIn.poll());
