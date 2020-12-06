@@ -88,7 +88,7 @@ public class Game {
         leftSocket = new Socket(ip, PORT);
         leftHandler = new SocketHandler(leftSocket, leftIn, leftOut);
         leftHandler.start();
-        System.out.println("Connected to left at " + leftSocket.getInetAddress().getHostAddress());
+        System.out.println("Connected at " + leftSocket.getInetAddress().getHostAddress());
         while(leftIn.isEmpty()) {}
 
         String response = leftIn.poll();
@@ -101,11 +101,18 @@ public class Game {
             System.out.println("Connected to right at " + leftSocket.getInetAddress().getHostAddress());
             leftOut.add("ok");
         } else if (response.equals("waitForConnection")) {
+            rightSocket = leftSocket;
+            rightHandler = leftHandler;
+            rightIn = leftIn;
+            rightOut = leftOut;
+            leftIn = new ArrayDeque<>();
+            leftOut = new ArrayDeque<>();
+
             System.out.println("Waiting for right.");
-            rightSocket = serverSocket.accept();
-            rightHandler = new SocketHandler(rightSocket, rightIn, rightOut);
-            rightHandler.start();
-            System.out.println("Right client connected from " + rightSocket.getInetAddress().getHostAddress());
+            leftSocket = serverSocket.accept();
+            leftHandler = new SocketHandler(leftSocket, leftIn, leftOut);
+            leftHandler.start();
+            System.out.println("Left client connected from " + rightSocket.getInetAddress().getHostAddress());
         } else {
             System.out.println("Response makes no sense.");
         }
