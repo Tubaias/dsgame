@@ -128,27 +128,27 @@ public class Game {
         while (true) {
             System.out.println("Gaming time started. Exit with 'exit'.");
 
-            String input = leftHandler.in.poll();
-            while(input != null) {
+            while(!leftHandler.in.isEmpty()) {
+                String input = leftHandler.in.poll();
                 System.out.println("LEFT: " + input);
-                input = leftHandler.in.poll();
             }
 
-            input = rightHandler.in.poll();
-            while(input != null) {
+            while(!rightHandler.in.isEmpty()) {
+                String input = rightHandler.in.poll();
                 System.out.println("RIGHT: " + input);
-                input = rightHandler.in.poll();
             }
 
-            String command = keyboard.nextLine();
-            if (command.equals("exit")) {
-                return;
-            }
+            if (System.in.available() > 0) {
+                String command = keyboard.nextLine();
+                if (command.equals("exit")) {
+                    return;
+                }
 
-            if (command.startsWith("left")) {
-                leftHandler.out.add(command.substring(5));
-            } else if (command.startsWith("right")) {
-                rightHandler.out.add(command.substring(6));
+                if (command.startsWith("left")) {
+                    leftHandler.out.add(command.substring(5));
+                } else if (command.startsWith("right")) {
+                    rightHandler.out.add(command.substring(6));
+                }
             }
         }
     }
