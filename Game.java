@@ -72,9 +72,7 @@ public class Game {
 
         System.out.println("Telling left to connect to right.");
         leftOut.add("connectTo " + rightSocket.getInetAddress().getHostAddress());
-        while(leftIn.isEmpty()) {
-            System.out.println("waiting");
-        }
+        while(leftIn.isEmpty()) {}
 
         System.out.println("Left response: " + leftIn.poll());
     }
@@ -115,7 +113,7 @@ public class Game {
             leftHandler = new SocketHandler(leftSocket, leftIn, leftOut);
             leftHandler.start();
             System.out.println("Connected to left at " + leftSocket.getInetAddress().getHostAddress());
-            leftOut.add("ok");
+            rightOut.add("ok");
         } else {
             System.out.println("Response makes no sense.");
         }
