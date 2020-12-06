@@ -179,7 +179,7 @@ public class Game {
         }
     }
 
-    private void handleMessage(String msg, String source) {
+    private void handleMessage(String msg, String source) throws Exception {
         if (msg.startsWith("FWD")) {
             String[] parts = msg.split(",");
             if (!parts[1].equals(name)) {
