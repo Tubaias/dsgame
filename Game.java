@@ -153,6 +153,7 @@ public class Game {
 
             if (System.in.available() > 0) {
                 String command = keyboard.nextLine();
+                if (command.equals("exit")) { return; }
                 handleCommand(command);
             }
         }
@@ -163,8 +164,8 @@ public class Game {
         handleCommand("playerlist");
         leftHandler.out.add("BIGBLIND," + BIGBLIND);
         pot = BIGBLIND + (BIGBLIND / 2);
-        System.out.println("POT:" + pot);
-        broadcast("POT:" + pot);
+        System.out.println("POT: " + pot);
+        broadcast("POT: " + pot);
 
         String flop = "" + rng.nextInt(13);
         System.out.println("FLOP: " + flop);
@@ -206,9 +207,7 @@ public class Game {
     }
 
     private void handleCommand(String command) throws Exception {
-        if (command.equals("exit")) {
-            return;
-        } else if (command.equals("deal")) {
+        if (command.equals("deal")) {
             dealRound();
         } else if (command.equals("playerlist")) {
             makePlayerList("");
