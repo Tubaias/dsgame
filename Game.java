@@ -125,9 +125,8 @@ public class Game {
     }
 
     private void gameLoop() throws Exception {
+        System.out.println("Gaming time started. Exit with 'exit'.");
         while (true) {
-            System.out.println("Gaming time started. Exit with 'exit'.");
-
             while(!leftHandler.in.isEmpty()) {
                 String input = leftHandler.in.poll();
                 System.out.println("LEFT: " + input);
