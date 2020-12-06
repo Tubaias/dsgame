@@ -220,28 +220,46 @@ public class Game {
         }
     }
 
-    private void makePlayerList(String input) {
-        if (input.isEmpty()) {
-            playerList.clear();
-            playerList.add(null);
-            leftHandler.out.add("PLAYERLIST," + name);
-        } else if (!input.contains(name)) {
-            playerList.clear();
-            playerList.add(null);
-            leftHandler.out.add(input + "," + name);
-        } else if (playerList.get(0) == null) {
-            leftHandler.out.add(input);
-            playerList.clear();
-
-            for (String str : input.split(",")) {
-                if (!str.equals("PLAYERLIST")) {
-                    playerList.add(str);
+    private void makePlayerList(String input) throws Exception {
+        boolean block = false;
+        while (true) {
+            if (input.isEmpty()) {
+                block = true;
+                playerList.clear();
+                playerList.add(null);
+                leftHandler.out.add("PLAYERLIST," + name);
+            } else if (input.startsWith("PLAYERLIST")) {
+                if (!input.contains(name)) {
+                    playerList.clear();
+                    playerList.add(null);
+                    leftHandler.out.add(input + "," + name);
+                } else if (playerList.get(0) == null) {
+                    leftHandler.out.add(input);
+                    playerList.clear();
+        
+                    for (String str : input.split(",")) {
+                        if (!str.equals("PLAYERLIST")) {
+                            playerList.add(str);
+                        }
+                    }
+        
+                    System.out.println("Player list: ");
+                    for (int i = 0; i < playerList.size(); i++) {
+                        System.out.println(i + ": " + playerList.get(i));
+                    }
+                } else {
+                    return;
                 }
-            }
+            } 
 
-            System.out.println("Player list: ");
-            for (int i = 0; i < playerList.size(); i++) {
-                System.out.println(i + ": " + playerList.get(i));
+            if (block) { 
+                while (rightHandler.in.isEmpty()) {
+                    Thread.sleep(100);
+                }
+
+                input = rightHandler.in.poll();
+            } else {
+                break; 
             }
         }
     }
