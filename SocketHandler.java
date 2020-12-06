@@ -35,11 +35,7 @@ public class SocketHandler extends Thread {
             while (running) {
                 if (inReader.ready()) {
                     input = inReader.readLine();
-
-                    if (input == null || input.equals("quit")) {
-                        break;
-                    }
-
+                    if (input == null || input.equals("QUIT")) { break; }
                     logger.info("FROM: " + socket.getInetAddress() + " : " + input);
                     in.add(input);
                 }

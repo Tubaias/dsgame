@@ -1,5 +1,6 @@
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -10,6 +11,8 @@ public class Game {
     private final int PORT = 25565;
     private final String DEFIP = "192.168.56.1";
     private final String LOGFILE = "log.log";
+    private final int BIGBLIND = 50;
+    private final int STARTINGCHIPS = 1000;
 
     private ServerSocket serverSocket;
     private Socket rightSocket;
@@ -19,7 +22,9 @@ public class Game {
     private Logger logger;
 
     private String name;
+    private int chips;
     private ArrayList<String> playerList;
+    private int pot;
 
     public Game(Scanner scanner) throws Exception {
         this.keyboard = scanner;
@@ -29,7 +34,8 @@ public class Game {
         this.logger.setUseParentHandlers(false);
         this.logger.addHandler(logHandler);
         this.name = "tempname";
-        playerList = new ArrayList<>();
+        this.chips = STARTINGCHIPS;
+        this.playerList = new ArrayList<>();
     }
 
     public void start() throws Exception {
@@ -84,7 +90,7 @@ public class Game {
         System.out.println("Left client connected from " + leftSocket.getInetAddress().getHostAddress());
 
         System.out.println("Telling left to connect to right.");
-        leftHandler.out.add("connectTo " + rightSocket.getInetAddress().getHostAddress());
+        leftHandler.out.add("CONNECTTO " + rightSocket.getInetAddress().getHostAddress());
         while(leftHandler.in.isEmpty()) {
             Thread.sleep(100);
         }
@@ -115,7 +121,7 @@ public class Game {
             rightHandler = new SocketHandler(rightSocket, logger);
             rightHandler.start();
             System.out.println("Right client connected from " + rightSocket.getInetAddress().getHostAddress());
-        } else if (response.startsWith("connectTo")) {
+        } else if (response.startsWith("CONNECTTO")) {
             // swapping pointers for consistency
             rightSocket = leftSocket;
             rightHandler = leftHandler;
@@ -152,23 +158,61 @@ public class Game {
         }
     }
 
+    private void dealRound() throws Exception {
+        Random rng = new Random();
+        handleCommand("playerlist");
+        leftHandler.out.add("BIGBLIND," + BIGBLIND);
+        pot = BIGBLIND + (BIGBLIND / 2);
+        System.out.println("POT:" + pot);
+        broadcast("POT:" + pot);
+
+        String flop = "" + rng.nextInt(13);
+        System.out.println("FLOP: " + flop);
+        broadcast("FLOP: " + flop);
+    }
+
+    private void broadcast(String message) {
+        for (String playerName : playerList) {
+            if (!playerName.equals(name)) {
+                leftHandler.out.add("FWD," + playerName + "," + message);
+            }
+        }
+    }
+
     private void handleMessage(String msg, String source) {
-        if (msg.startsWith("playerList")) {
+        if (msg.startsWith("FWD")) {
+            String[] parts = msg.split(",");
+            if (!parts[1].equals(name)) {
+                leftHandler.out.add(msg);
+                return;
+            } else {
+                msg = "";
+                for (int i = 2; i < parts.length; i++) {
+                    msg.concat(parts[i]);
+                }
+            }
+        }
+        
+        if (msg.startsWith("PLAYERLIST")) {
             makePlayerList(msg);
+        } else if (msg.startsWith("BIGBLIND")) {
+            bigBlind(msg.split(",")[1]);
+        } else if (msg.startsWith("SMALLBLIND")) {
+            smallBlind(msg.split(",")[1]);
         } else {
             System.out.println(source + ": " + msg);
         }
     }
 
-    private void handleCommand(String command) {
+    private void handleCommand(String command) throws Exception {
         if (command.equals("exit")) {
             return;
-        }
-
-        if (command.equals("playerlist")) {
+        } else if (command.equals("deal")) {
+            dealRound();
+        } else if (command.equals("playerlist")) {
             makePlayerList("");
-        }
-
+        } 
+        
         if (command.startsWith("left")) {
             leftHandler.out.add(command.substring(5));
         } else if (command.startsWith("right")) {
@@ -180,7 +224,7 @@ public class Game {
         if (input.isEmpty()) {
             playerList.clear();
             playerList.add(null);
-            leftHandler.out.add("playerList," + name);
+            leftHandler.out.add("PLAYERLIST," + name);
         } else if (!input.contains(name)) {
             playerList.clear();
             playerList.add(null);
@@ -190,7 +234,7 @@ public class Game {
             playerList.clear();
 
             for (String str : input.split(",")) {
-                if (!str.equals("playerList")) {
+                if (!str.equals("PLAYERLIST")) {
                     playerList.add(str);
                 }
             }
@@ -200,5 +244,16 @@ public class Game {
                 System.out.println(i + ": " + playerList.get(i));
             }
         }
+    }
+
+    private void bigBlind(String amount) {
+        int integeramount = Integer.parseInt(amount);
+        this.chips -= integeramount;
+        leftHandler.out.add("SMALLBLIND," + integeramount / 2);
+    }
+
+    private void smallBlind(String amount) {
+        int integeramount = Integer.parseInt(amount);
+        this.chips -= integeramount;
     }
 }
