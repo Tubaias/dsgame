@@ -182,22 +182,15 @@ public class Game {
     private void handleMessage(String msg, String source) throws Exception {
         if (msg.startsWith("FWD")) {
             String[] parts = msg.split(",");
-            System.out.println("forwarding message. Parts: ");
-            for (String s : parts) {
-                System.out.println(s);
-            }
 
             if (!parts[1].equals(name)) {
                 leftHandler.out.add(msg);
-                System.out.println("Forwarded.");
                 return;
             } else {
                 msg = "";
                 for (int i = 2; i < parts.length; i++) {
-                    msg.concat(parts[i]);
+                    msg = msg.concat(parts[i]);
                 }
-
-                System.out.println("Message was for us. Message: " + msg);
             }
         }
         
