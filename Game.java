@@ -1,7 +1,7 @@
 import java.net.*;
 import java.io.*;
-import java.util.ArrayDeque;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
@@ -17,18 +17,18 @@ public class Game {
     private Socket leftSocket;
     private SocketHandler rightHandler;
     private SocketHandler leftHandler;
-    private volatile ArrayDeque<String> rightIn;
-    private volatile ArrayDeque<String> rightOut;
-    private volatile ArrayDeque<String> leftIn;
-    private volatile ArrayDeque<String> leftOut;
+    private ConcurrentLinkedDeque<String> rightIn;
+    private ConcurrentLinkedDeque<String> rightOut;
+    private ConcurrentLinkedDeque<String> leftIn;
+    private ConcurrentLinkedDeque<String> leftOut;
     private Logger logger;
 
     public Game(Scanner input) throws Exception {
         this.keyboard = input;
-        rightIn = new ArrayDeque<>();
-        rightOut = new ArrayDeque<>();
-        leftIn = new ArrayDeque<>();
-        leftOut = new ArrayDeque<>();
+        rightIn = new ConcurrentLinkedDeque<>();
+        rightOut = new ConcurrentLinkedDeque<>();
+        leftIn = new ConcurrentLinkedDeque<>();
+        leftOut = new ConcurrentLinkedDeque<>();
 
         FileHandler logHandler = new FileHandler(LOGFILE, true);
         logger = Logger.getLogger("gameLogger");
@@ -122,8 +122,8 @@ public class Game {
             rightHandler = leftHandler;
             rightIn = leftIn;
             rightOut = leftOut;
-            leftIn = new ArrayDeque<>();
-            leftOut = new ArrayDeque<>();
+            leftIn = new ConcurrentLinkedDeque<>();
+            leftOut = new ConcurrentLinkedDeque<>();
 
             String leftIP = response.substring(10);
             System.out.println("Connecting to " + leftIP);

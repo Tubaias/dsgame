@@ -2,20 +2,20 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.ArrayDeque;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.logging.Logger;
 
 public class SocketHandler extends Thread {
     private Socket socket;
     private PrintWriter out;
     private BufferedReader in;
-    private volatile ArrayDeque<String> inQueue;
-    private volatile ArrayDeque<String> outQueue;
+    private ConcurrentLinkedDeque<String> inQueue;
+    private ConcurrentLinkedDeque<String> outQueue;
     private Logger logger;
 
     private boolean running;
 
-    public SocketHandler(Socket socket, ArrayDeque<String> inQueue, ArrayDeque<String> outQueue, Logger logger) {
+    public SocketHandler(Socket socket, ConcurrentLinkedDeque<String> inQueue, ConcurrentLinkedDeque<String> outQueue, Logger logger) {
         this.socket = socket;
         this.inQueue = inQueue;
         this.outQueue = outQueue;
