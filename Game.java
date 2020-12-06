@@ -27,7 +27,7 @@ public class Game {
         leftOut = new ArrayDeque<>();
     }
 
-    public void start() throws IOException {
+    public void start() throws Exception {
         System.out.println("Create or join?");
         String command = keyboard.nextLine();
         if (command.startsWith("c")) {
@@ -53,7 +53,7 @@ public class Game {
         leftSocket.close();
     }
 
-    public void createGame() throws IOException {
+    public void createGame() throws Exception {
         serverSocket = new ServerSocket(PORT);
         System.out.println("Server socket hosted on " + InetAddress.getLocalHost() + ", port " + PORT);
 
@@ -72,12 +72,14 @@ public class Game {
 
         System.out.println("Telling left to connect to right.");
         leftOut.add("connectTo " + rightSocket.getInetAddress().getHostAddress());
-        while(leftIn.isEmpty()) {}
+        while(leftIn.isEmpty()) {
+            Thread.sleep(100);
+        }
 
         System.out.println("Left response: " + leftIn.poll());
     }
 
-    public void joinGame() throws IOException {
+    public void joinGame() throws Exception {
         serverSocket = new ServerSocket(PORT);
         System.out.println("Server socket hosted on " + InetAddress.getLocalHost() + ", port " + PORT);
 
@@ -89,7 +91,9 @@ public class Game {
         leftHandler = new SocketHandler(leftSocket, leftIn, leftOut);
         leftHandler.start();
         System.out.println("Connected at " + leftSocket.getInetAddress().getHostAddress());
-        while(leftIn.isEmpty()) {}
+        while(leftIn.isEmpty()) {
+            Thread.sleep(100);
+        }
 
         String response = leftIn.poll();
         if (response.equals("waitForConnection")) {
@@ -130,7 +134,7 @@ public class Game {
             if (command.startsWith("left")) {
                 leftOut.add(command.substring(5));
             } else if (command.startsWith("right")) {
-                rightOut.add(command.substring(5));
+                rightOut.add(command.substring(6));
             } 
         }
     }
