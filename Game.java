@@ -10,7 +10,7 @@ public class Game {
     private Scanner keyboard;
     private final int PORT = 25565;
     private final String DEFIP = "192.168.56.1";
-    private final String LOGFILE = "log.log";
+    private final String LOGFILE = "dsgamelog.log";
     private final int SMALLBLIND = 25;
     private final int STARTINGCHIPS = 1000;
     private final int CALLAMOUNT = 50;
@@ -26,6 +26,7 @@ public class Game {
     private ArrayList<String> chipList;
     private ArrayList<String> statusList;
     private int pot;
+    private int flop;
     private String name;
     private int chips;
     private int card1;
@@ -202,7 +203,14 @@ public class Game {
     }
 
     private void dealRound() throws Exception {
+        playerList.clear();
+        chipList.clear();
+        statusList.clear();
         Random rng = new Random();
+
+        System.out.println(name + " is the new dealer.");
+        broadcast(name + " is the new dealer.");
+
         makePlayerList("");
         leftHandler.out.add("SMALLBLIND," + SMALLBLIND);
         makeChipList("");
@@ -213,9 +221,14 @@ public class Game {
         dealCards(rng);
         bettingRound();
 
-        String flop = "" + rng.nextInt(13);
+        System.out.println("POT: " + pot);
+        broadcast("POT: " + pot);
+
+        flop = rng.nextInt(13);
         System.out.println("FLOP: " + flop);
         broadcast("FLOP: " + flop);
+
+        showdown();
     }
 
     private void dealCards(Random rng) {
@@ -248,7 +261,6 @@ public class Game {
             String playerName = playerList.get(i);
             System.out.println(playerName + "'s turn.");
             broadcast(playerName + "'s turn.");
-
             leftHandler.out.add("FWD," + playerName + ",MAKEBET");
 
             while (true) {
@@ -256,10 +268,7 @@ public class Game {
 
                 String message = rightHandler.in.poll();
                 if (message.startsWith("BET") && message.contains(playerName)) {
-                    System.out.println("AAAAA: " + message);
                     String action = message.split(",")[2];
-                    System.out.println("ACTION: " + action);
-
                     statusList.add(i, action);
                     if (action.equals("CALL")) { pot += CALLAMOUNT; }
                     handleMessage(message, "RIGHT");
@@ -293,6 +302,57 @@ public class Game {
                 System.out.println(parts[1] + " folds.");
             }
 
+            leftHandler.out.add(msg);
+        }
+    }
+
+    private void showdown() throws Exception {
+        int bestHand = 0;
+        String winner = null;
+        for (int i = 0; i < playerList.size(); i++) {
+            if (statusList.get(i).equals("CALL")) {
+                String playerName = playerList.get(i);
+
+                leftHandler.out.add("FWD," + playerName + ",GETHAND");
+
+                while (true) {
+                    while (rightHandler.in.isEmpty()) { Thread.sleep(100); }
+    
+                    String message = rightHandler.in.poll();
+                    if (message.startsWith("HAND")) {
+                        String[] parts = message.split(",");
+                        int playersCard1 = Integer.parseInt(parts[2]);
+                        int playersCard2 = Integer.parseInt(parts[3]);
+
+                        int handValue = parseHand(playersCard1, playersCard2);
+                        if (handValue > bestHand) {
+                            bestHand = handValue;
+                            winner = playerName;
+                        } 
+
+                        handleMessage(message, "RIGHT");
+                        break;
+                    } else {
+                        handleMessage(message, "RIGHT");
+                    }
+                }
+
+                System.out.println("WINNER: " + winner);
+                broadcast("WINNER: " + winner);
+                leftHandler.out.add("FWD," + playerName + ",ADDCHIPS," + pot);
+                makeChipList("");
+            }
+        }
+    }
+
+    private int parseHand(int c1, int c2) {
+        return c1 + c2 + flop;
+    }
+
+    private void handleHand(String msg) {
+        if (!msg.contains(name)) {
+            String[] parts = msg.split(",");
+            System.out.println(parts[1] + "'s hand: " + parts[2] +", " + parts[3]);
             leftHandler.out.add(msg);
         }
     }
@@ -352,6 +412,10 @@ public class Game {
             makeBet();
         } else if (msg.startsWith("BET")) {
             handleBet(msg);
+        } else if (msg.startsWith("GETHAND")) {
+            leftHandler.out.add("HAND," + name + "," + card1 + "," + card2);
+        } else if (msg.startsWith("HAND")) {
+            handleHand(msg);
         } else {
             System.out.println(msg);
         }
