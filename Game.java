@@ -308,7 +308,7 @@ public class Game {
 
     private void showdown() throws Exception {
         int bestHand = 0;
-        String winner = null;
+        String winner = "nobody";
         for (int i = 0; i < playerList.size(); i++) {
             if (statusList.get(i).equals("CALL")) {
                 String playerName = playerList.get(i);
@@ -343,7 +343,7 @@ public class Game {
         broadcast("WINNER: " + winner);
         if (winner.equals(name)) {
             chips += pot;
-        } else {
+        } else if (!winner.equals("nobody")) {
             leftHandler.out.add("FWD," + winner + ",ADDCHIPS," + pot);
         }
         
