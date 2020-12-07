@@ -13,6 +13,7 @@ public class Game {
     private final String LOGFILE = "log.log";
     private final int SMALLBLIND = 25;
     private final int STARTINGCHIPS = 1000;
+    private final int CALLAMOUNT = 50;
 
     private ServerSocket serverSocket;
     private Socket rightSocket;
@@ -23,6 +24,8 @@ public class Game {
 
     private ArrayList<String> playerList;
     private ArrayList<String> chipList;
+    private ArrayList<String> statusList;
+    private int pot;
     private String name;
     private int chips;
     private int card1;
@@ -39,6 +42,7 @@ public class Game {
         this.chips = STARTINGCHIPS;
         this.playerList = new ArrayList<>();
         this.chipList = new ArrayList<>();
+        this.statusList = new ArrayList<>();
     }
 
     public void start() throws Exception {
@@ -199,18 +203,17 @@ public class Game {
 
     private void dealRound() throws Exception {
         Random rng = new Random();
-        handleCommand("playerlist");
+        makePlayerList("");
         leftHandler.out.add("SMALLBLIND," + SMALLBLIND);
-        handleCommand("chiplist");
-        int pot = SMALLBLIND + (SMALLBLIND * 2);
+        makeChipList("");
+        pot = SMALLBLIND + (SMALLBLIND * 2);
         System.out.println("POT: " + pot);
         broadcast("POT: " + pot);
 
         dealCards(rng);
+        bettingRound();
 
-        //String flop = "" + rng.nextInt(13);
-        System.out.println("insert flop: ");
-        String flop = keyboard.nextLine();
+        String flop = "" + rng.nextInt(13);
         System.out.println("FLOP: " + flop);
         broadcast("FLOP: " + flop);
     }
@@ -221,6 +224,65 @@ public class Game {
         System.out.println("Own cards: " + card1 + ", " + card2);
         for (int i = 1; i < playerList.size(); i++) {
             leftHandler.out.add("FWD," + playerList.get(i) + ",CARDS," + rng.nextInt(13) + "," + rng.nextInt(13));
+        }
+    }
+
+    private void bettingRound() throws Exception {
+        System.out.println("Call or Fold?");
+        String command = keyboard.nextLine();
+        if (command.startsWith("c")) {
+            chips -= CALLAMOUNT;
+            pot += CALLAMOUNT;
+            statusList.add(0, "CALL");
+            broadcast(name + " calls.");
+        } else {
+            statusList.add(0, "FOLD");
+            broadcast(name + " folds.");
+        }
+
+        for (int i = 1; i < playerList.size(); i++) {
+            String playerName = playerList.get(i);
+            leftHandler.out.add("FWD," + playerName + ",MAKEBET");
+
+            while (true) {
+                while (rightHandler.in.isEmpty()) { Thread.sleep(100); }
+
+                String message = rightHandler.in.poll();
+                if (message.startsWith("BET") && message.contains(playerName)) {
+                    String action = message.split(",")[2];
+
+                    statusList.add(i, action);
+                    if (action.equals("CALL")) { pot += CALLAMOUNT; }
+                    handleMessage(message, "RIGHT");
+                    break;
+                } else {
+                    handleMessage(message, "RIGHT");
+                }
+            }
+        }
+    }
+
+    private void makeBet() {
+        System.out.println("Call or Fold?");
+        String command = keyboard.nextLine();
+        if (command.startsWith("c")) {
+            chips -= CALLAMOUNT;
+            leftHandler.out.add("BET," + name + ",CALL");
+        } else {
+            leftHandler.out.add("BET," + name + ",FOLD");
+        }
+    }
+
+    private void handleBet(String msg) {
+        if (!msg.contains(name)) {
+            String[] parts = msg.split(",");
+            if (parts[2] == "CALL") {
+                System.out.println(parts[1] + " calls.");
+            } else {
+                System.out.println(parts[1] + " folds.");
+            }
+
+            leftHandler.out.add(msg);
         }
     }
 
@@ -275,6 +337,10 @@ public class Game {
             broadcast(name + " has " + chips + " chips.");
         } else if (msg.startsWith("CARDS")) {
             saveCards(msg);
+        } else if (msg.startsWith("MAKEBET")) {
+            makeBet();
+        } else if (msg.startsWith("BET")) {
+            handleBet(msg);
         } else {
             System.out.println(msg);
         }
@@ -283,11 +349,7 @@ public class Game {
     private void handleCommand(String command) throws Exception {
         if (command.equals("deal")) {
             dealRound();
-        } else if (command.equals("playerlist")) {
-            makePlayerList("");
-        } else if (command.equals("chiplist")) {
-            makeChipList("");
-        } 
+        }
         
         if (command.startsWith("left")) {
             leftHandler.out.add(command.substring(5));
