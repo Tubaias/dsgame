@@ -1,6 +1,5 @@
 import java.net.*;
 import java.util.ArrayList;
-import java.util.Random;
 import java.util.Scanner;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -76,11 +75,15 @@ public class Game {
         serverSocket = new ServerSocket(PORT);
         System.out.println("Server socket hosted on " + InetAddress.getLocalHost() + ", port " + PORT);
 
+        System.out.println("How many players (including self)?");
+        int playercount = Integer.parseInt(keyboard.nextLine());
+        if (playercount < 3) { return; }
+
         System.out.println("Waiting for right.");
         rightSocket = serverSocket.accept();
         rightHandler = new SocketHandler(rightSocket, logger);
         rightHandler.start();
-        rightHandler.out.add("waitForConnection");
+        rightHandler.out.add("WAITFORCONNECTION");
         System.out.println("Right client connected from " + rightSocket.getInetAddress().getHostAddress());
 
         System.out.println("Waiting for left.");
@@ -96,6 +99,29 @@ public class Game {
         }
 
         System.out.println("Left response: " + leftHandler.in.poll());
+
+        int connectedPlayers = 3;
+        while (connectedPlayers < playercount) {
+            System.out.println("Current playercount: " + connectedPlayers + "/" + playercount);
+            Socket newPlayerSocket = serverSocket.accept();
+            System.out.println("Got new connection.");
+            String rightIP = rightSocket.getInetAddress().getHostAddress();
+            rightHandler.out.add("BREAKANDAWAIT");
+            rightHandler.out.add("killThread");
+
+            rightSocket = newPlayerSocket;
+            rightHandler = new SocketHandler(rightSocket, logger);
+            rightHandler.start();
+            System.out.println("Completing circle.");
+            rightHandler.out.add("CONNECTTOALT " + rightIP);
+
+            while(rightHandler.in.isEmpty()) {
+                Thread.sleep(100);
+            }
+
+            System.out.println("Response: " + rightHandler.in.poll());
+            connectedPlayers++;
+        }
     }
 
     public void joinGame() throws Exception {
@@ -115,7 +141,7 @@ public class Game {
         }
 
         String response = leftHandler.in.poll();
-        if (response.equals("waitForConnection")) {
+        if (response.equals("WAITFORCONNECTION")) {
             System.out.println("Waiting for right.");
             rightSocket = serverSocket.accept();
             rightHandler = new SocketHandler(rightSocket, logger);
@@ -133,6 +159,14 @@ public class Game {
             leftHandler.start();
             System.out.println("Connected to left at " + leftSocket.getInetAddress().getHostAddress());
             rightHandler.out.add("ok");
+        } else if (response.startsWith("CONNECTTOALT")) {
+            String rightIP = response.substring(13);
+            System.out.println("Connecting to " + rightIP);
+            rightSocket = new Socket(rightIP, PORT);
+            rightHandler = new SocketHandler(rightSocket, logger);
+            rightHandler.start();
+            System.out.println("Connected to right at " + rightSocket.getInetAddress().getHostAddress());
+            leftHandler.out.add("ok");
         } else {
             System.out.println("Response makes no sense.");
         }
@@ -160,14 +194,15 @@ public class Game {
     }
 
     private void dealRound() throws Exception {
-        Random rng = new Random();
+        //Random rng = new Random();
         handleCommand("playerlist");
         leftHandler.out.add("BIGBLIND," + BIGBLIND);
         pot = BIGBLIND + (BIGBLIND / 2);
         System.out.println("POT: " + pot);
         broadcast("POT: " + pot);
 
-        String flop = "" + rng.nextInt(13);
+        //String flop = "" + rng.nextInt(13);
+        String flop = keyboard.nextLine();
         System.out.println("FLOP: " + flop);
         broadcast("FLOP: " + flop);
     }
@@ -192,6 +227,20 @@ public class Game {
                 for (int i = 2; i < parts.length; i++) {
                     msg = msg.concat(parts[i]);
                 }
+            }
+        }
+
+        if (msg.equals("BREAKANDAWAIT")) {
+            if (source.equals("LEFT")) {
+                leftHandler.out.add("killThread");
+                leftSocket = serverSocket.accept();
+                leftHandler = new SocketHandler(leftSocket, logger);
+                leftHandler.start();
+            } else {
+                rightHandler.out.add("killThread");
+                rightSocket = serverSocket.accept();
+                rightHandler = new SocketHandler(rightSocket, logger);
+                rightHandler.start();
             }
         }
         
