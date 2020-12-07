@@ -5,6 +5,8 @@ import java.net.Socket;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.logging.Logger;
 
+// Class for asynchronously listening to a web socket.
+// Two ConcurrentLinkedDeques are used to exchange information with the game's main thread.
 public class SocketHandler extends Thread {
     private Socket socket;
     private PrintWriter outWriter;
@@ -24,6 +26,8 @@ public class SocketHandler extends Thread {
         this.running = true;
     }
 
+    // Gets input from and sends output to the given web socket.
+    // Also logs every input/output/error with the given Logger object.
     public void run() {
         try {
             outWriter = new PrintWriter(socket.getOutputStream(), true);

@@ -1,4 +1,6 @@
-import java.net.*;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.Scanner;
@@ -7,7 +9,7 @@ import java.util.logging.Handler;
 import java.util.logging.Logger;
 
 public class Game {
-    private Scanner keyboard;
+    // hardcoded variables
     private final int PORT = 25565;
     private final String DEFIP = "192.168.56.1";
     private final String LOGFILE = "dsgamelog.log";
@@ -15,6 +17,8 @@ public class Game {
     private final int STARTINGCHIPS = 1000;
     private final int CALLAMOUNT = 50;
 
+    // connectivity/IO variables
+    private Scanner keyboard;
     private ServerSocket serverSocket;
     private Socket rightSocket;
     private Socket leftSocket;
@@ -22,12 +26,13 @@ public class Game {
     private SocketHandler leftHandler;
     private Logger logger;
 
+    // game logic related variables
     private ArrayList<String> playerList;
     private ArrayList<String> chipList;
     private ArrayList<String> statusList;
     private int pot;
     private int flop;
-    private String name;
+    private String ownName;
     private int chips;
     private int card1;
     private int card2;
@@ -39,16 +44,18 @@ public class Game {
         this.logger = Logger.getLogger("gameLogger");
         this.logger.setUseParentHandlers(false);
         this.logger.addHandler(logHandler);
-        this.name = "tempname";
+        this.ownName = "tempname";
         this.chips = STARTINGCHIPS;
         this.playerList = new ArrayList<>();
         this.chipList = new ArrayList<>();
         this.statusList = new ArrayList<>();
     }
 
+    // Initial method called by the main class. 
+    // User inserts name and chooses to create or join a game.
     public void start() throws Exception {
         System.out.print("Insert name: ");
-        name = keyboard.nextLine();
+        ownName = keyboard.nextLine();
         System.out.println("Create or join?");
         String command = keyboard.nextLine();
         if (command.startsWith("c")) {
@@ -65,6 +72,7 @@ public class Game {
         }
     }
 
+    // Cleanup method. Called when the game is over.
     public void stop() throws Exception {
         leftHandler.out.add("killThread");
         rightHandler.out.add("killThread");
@@ -80,6 +88,7 @@ public class Game {
         }
     }
 
+    // Creates a new game session by waiting for the set amount of players and creating a ring topology of TCP connections. 
     public void createGame() throws Exception {
         serverSocket = new ServerSocket(PORT);
         System.out.println("Server socket hosted on " + InetAddress.getLocalHost() + ", port " + PORT);
@@ -133,6 +142,7 @@ public class Game {
         }
     }
 
+    // Joins an already created game session that is waiting for players.
     public void joinGame() throws Exception {
         serverSocket = new ServerSocket(PORT);
         System.out.println("Server socket hosted on " + InetAddress.getLocalHost() + ", port " + PORT);
@@ -181,9 +191,11 @@ public class Game {
         }
     }
 
+    // Main loop of the game that is run after the ring of connections is complete.
     private void gameLoop() throws Exception {
         System.out.println("Gaming time started. Exit with 'exit'.");
         while (true) {
+            // handle inputs from the neighboring network nodes
             while(!leftHandler.in.isEmpty()) {
                 String msg = leftHandler.in.poll();
                 handleMessage(msg, "LEFT");
@@ -194,6 +206,7 @@ public class Game {
                 handleMessage(msg, "RIGHT");
             }
 
+            // handle inputs from the local keyboard
             if (System.in.available() > 0) {
                 String command = keyboard.nextLine();
                 if (command.equals("exit")) { return; }
@@ -202,6 +215,7 @@ public class Game {
         }
     }
 
+    // Player becomes the dealer for a round and handles logic related to game round progression.
     private void dealRound() throws Exception {
         playerList.clear();
         chipList.clear();
@@ -209,8 +223,8 @@ public class Game {
         Random rng = new Random();
 
         makePlayerList("");
-        System.out.println(name + " is the new dealer.");
-        broadcast(name + " is the new dealer.");
+        System.out.println(ownName + " is the new dealer.");
+        broadcast(ownName + " is the new dealer.");
 
         leftHandler.out.add("SMALLBLIND," + SMALLBLIND);
         makeChipList("");
@@ -231,6 +245,7 @@ public class Game {
         showdown();
     }
 
+    // Deal 'cards' to self and other players.
     private void dealCards(Random rng) {
         card1 = rng.nextInt(13);
         card2 = rng.nextInt(13);
@@ -240,9 +255,11 @@ public class Game {
         }
     }
 
+    // Ask self and other players to either CALL or FOLD on the current round.
     private void bettingRound() throws Exception {
-        System.out.println(name + "'s turn.");
-        broadcast(name + "'s turn.");
+        // Own choice
+        System.out.println(ownName + "'s turn.");
+        broadcast(ownName + "'s turn.");
         System.out.println("Call or Fold?");
         String command = keyboard.nextLine();
         if (command.startsWith("c")) {
@@ -250,13 +267,14 @@ public class Game {
             chips -= CALLAMOUNT;
             pot += CALLAMOUNT;
             statusList.add(0, "CALL");
-            broadcast(name + " calls.");
+            broadcast(ownName + " calls.");
         } else {
             System.out.println("Chose to fold.");
             statusList.add(0, "FOLD");
-            broadcast(name + " folds.");
+            broadcast(ownName + " folds.");
         }
 
+        // Other players
         for (int i = 1; i < playerList.size(); i++) {
             String playerName = playerList.get(i);
             System.out.println(playerName + "'s turn.");
@@ -280,21 +298,23 @@ public class Game {
         }
     }
 
+    // Method for choosing CALL or FOLD when not the dealer.
     private void makeBet() {
         System.out.println("Call or Fold?");
         String command = keyboard.nextLine();
         if (command.startsWith("c")) {
             System.out.println("Chose to call.");
             chips -= CALLAMOUNT;
-            leftHandler.out.add("BET," + name + ",CALL");
+            leftHandler.out.add("BET," + ownName + ",CALL");
         } else {
             System.out.println("Chose to fold.");
-            leftHandler.out.add("BET," + name + ",FOLD");
+            leftHandler.out.add("BET," + ownName + ",FOLD");
         }
     }
 
+    // Prints and forwards the BET message if it was made by another player.
     private void handleBet(String msg) {
-        if (!msg.contains(name)) {
+        if (!msg.contains(ownName)) {
             String[] parts = msg.split(",");
             if (parts[2].equals("CALL")) {
                 System.out.println(parts[1] + " calls.");
@@ -306,6 +326,7 @@ public class Game {
         }
     }
 
+    // Compare hands of all players that called and declare the winner.
     private void showdown() throws Exception {
         int bestHand = 0;
         String winner = "nobody";
@@ -341,7 +362,7 @@ public class Game {
 
         System.out.println("WINNER: " + winner);
         broadcast("WINNER: " + winner);
-        if (winner.equals(name)) {
+        if (winner.equals(ownName)) {
             chips += pot;
         } else if (!winner.equals("nobody")) {
             leftHandler.out.add("FWD," + winner + ",ADDCHIPS," + pot);
@@ -350,34 +371,40 @@ public class Game {
         makeChipList("");
     }
 
+    // Simplistic hand value that just sums the numbers.
     private int parseHand(int c1, int c2) {
         return c1 + c2 + flop;
     }
 
+    // Prints and forwards the HAND message if it was made by another player.
     private void handleHand(String msg) {
-        if (!msg.contains(name)) {
+        if (!msg.contains(ownName)) {
             String[] parts = msg.split(",");
             System.out.println(parts[1] + "'s hand: " + parts[2] +", " + parts[3]);
             leftHandler.out.add(msg);
         }
     }
 
+    // Broadcasts a message to all other players in the session.
     private void broadcast(String message) {
         for (String playerName : playerList) {
-            if (!playerName.equals(name)) {
+            if (!playerName.equals(ownName)) {
                 leftHandler.out.add("FWD," + playerName + "," + message);
             }
         }
     }
 
+    // Decides what to do with a message received from the network
     private void handleMessage(String msg, String source) throws Exception {
+        // simply forward messages if they contain the FWD tag and are not for us
         if (msg.startsWith("FWD")) {
             String[] parts = msg.split(",");
 
-            if (!parts[1].equals(name)) {
+            if (!parts[1].equals(ownName)) {
                 leftHandler.out.add(msg);
                 return;
             } else {
+                // if the message is for us, remove the assosiated FWD tag and recipient info
                 msg = "";
                 for (int i = 2; i < parts.length; i++) {
                     msg = msg.concat(parts[i] + ",");
@@ -387,6 +414,7 @@ public class Game {
             }
         }
 
+        // handle the BREAKANDAWAIT message that is used in forming the TCP connection circle
         if (msg.equals("BREAKANDAWAIT")) {
             if (source.equals("LEFT")) {
                 leftHandler.out.add("killThread");
@@ -401,6 +429,7 @@ public class Game {
             }
         }
         
+        // handle other messages. If unknown, simply print the message.
         if (msg.startsWith("PLAYERLIST")) {
             makePlayerList(msg);
         } else if (msg.startsWith("CHIPLIST")) {
@@ -410,7 +439,7 @@ public class Game {
         } else if (msg.startsWith("SMALLBLIND")) {
             smallBlind(msg.split(",")[1]);
         } else if (msg.startsWith("TELLCHIPS")) {
-            broadcast(name + " has " + chips + " chips.");
+            broadcast(ownName + " has " + chips + " chips.");
         } else if (msg.startsWith("CARDS")) {
             saveCards(msg);
         } else if (msg.startsWith("MAKEBET")) {
@@ -418,7 +447,7 @@ public class Game {
         } else if (msg.startsWith("BET")) {
             handleBet(msg);
         } else if (msg.startsWith("GETHAND")) {
-            leftHandler.out.add("HAND," + name + "," + card1 + "," + card2);
+            leftHandler.out.add("HAND," + ownName + "," + card1 + "," + card2);
         } else if (msg.startsWith("HAND")) {
             handleHand(msg);
         } else if (msg.startsWith("ADDCHIPS")) {
@@ -428,6 +457,7 @@ public class Game {
         }
     }
 
+    // Handles commands received from the local keyboard.
     private void handleCommand(String command) throws Exception {
         if (command.equals("deal")) {
             dealRound();
@@ -440,6 +470,7 @@ public class Game {
         }
     }
 
+    // Saves values to own cards based on input message.
     private void saveCards(String input) {
         String[] parts = input.split(",");
         card1 = Integer.parseInt(parts[1]);
@@ -447,6 +478,8 @@ public class Game {
         System.out.println("Own cards: " + card1 + ", " + card2);
     }
 
+    // Discovers all the players in the session and makes every node save and print the list.
+    // Only blocks the node that initiated the discovery (This should be the dealer of a round).
     private void makePlayerList(String input) throws Exception {
         boolean block = false;
         while (true) {
@@ -454,12 +487,12 @@ public class Game {
                 block = true;
                 playerList.clear();
                 playerList.add(null);
-                leftHandler.out.add("PLAYERLIST," + name);
+                leftHandler.out.add("PLAYERLIST," + ownName);
             } else if (input.startsWith("PLAYERLIST")) {
-                if (!input.contains(name)) {
+                if (!input.contains(ownName)) {
                     playerList.clear();
                     playerList.add(null);
-                    leftHandler.out.add(input + "," + name);
+                    leftHandler.out.add(input + "," + ownName);
                 } else if (playerList.get(0) == null) {
                     leftHandler.out.add(input);
                     playerList.clear();
@@ -491,6 +524,8 @@ public class Game {
         }
     }
 
+    // Discovers the chip amounts of all players in the session and makes every node save and print the list.
+    // Only blocks the node that initiated the discovery (This should be the dealer of a round).
     private void makeChipList(String input) throws Exception {
         boolean block = false;
         while (true) {
@@ -498,12 +533,12 @@ public class Game {
                 block = true;
                 chipList.clear();
                 chipList.add(null);
-                leftHandler.out.add("CHIPLIST," + name + "|" + chips);
+                leftHandler.out.add("CHIPLIST," + ownName + "|" + chips);
             } else if (input.startsWith("CHIPLIST")) {
-                if (!input.contains(name)) {
+                if (!input.contains(ownName)) {
                     chipList.clear();
                     chipList.add(null);
-                    leftHandler.out.add(input + "," + name + "|" + chips);
+                    leftHandler.out.add(input + "," + ownName + "|" + chips);
                 } else if (chipList.get(0) == null) {
                     leftHandler.out.add(input);
                     chipList.clear();
@@ -535,12 +570,14 @@ public class Game {
         }
     }
 
+    // Deducts the given amount from own chips and calls BIGBLIND to left neighbor.
     private void smallBlind(String amount) {
         int integeramount = Integer.parseInt(amount);
         this.chips -= integeramount;
         leftHandler.out.add("BIGBLIND," + integeramount * 2);
     }
 
+    // Deducts the given amount from own chips.
     private void bigBlind(String amount) {
         int integeramount = Integer.parseInt(amount);
         this.chips -= integeramount;
