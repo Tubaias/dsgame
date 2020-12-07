@@ -113,7 +113,7 @@ public class Game {
             rightHandler = new SocketHandler(rightSocket, logger);
             rightHandler.start();
             System.out.println("Completing circle.");
-            rightHandler.out.add("CONNECTTOALT " + rightIP);
+            rightHandler.out.add("ALTCONNECTTO " + rightIP);
 
             while(rightHandler.in.isEmpty()) {
                 Thread.sleep(100);
@@ -159,7 +159,7 @@ public class Game {
             leftHandler.start();
             System.out.println("Connected to left at " + leftSocket.getInetAddress().getHostAddress());
             rightHandler.out.add("ok");
-        } else if (response.startsWith("CONNECTTOALT")) {
+        } else if (response.startsWith("ALTCONNECTTO")) {
             String rightIP = response.substring(13);
             System.out.println("Connecting to " + rightIP);
             rightSocket = new Socket(rightIP, PORT);
