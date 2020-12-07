@@ -336,13 +336,13 @@ public class Game {
                         handleMessage(message, "RIGHT");
                     }
                 }
-
-                System.out.println("WINNER: " + winner);
-                broadcast("WINNER: " + winner);
-                leftHandler.out.add("FWD," + playerName + ",ADDCHIPS," + pot);
-                makeChipList("");
             }
         }
+
+        System.out.println("WINNER: " + winner);
+        broadcast("WINNER: " + winner);
+        leftHandler.out.add("FWD," + winner + ",ADDCHIPS," + pot);
+        makeChipList("");
     }
 
     private int parseHand(int c1, int c2) {
