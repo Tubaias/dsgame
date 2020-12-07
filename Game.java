@@ -228,20 +228,27 @@ public class Game {
     }
 
     private void bettingRound() throws Exception {
+        System.out.println(name + "'s turn.");
+        broadcast(name + "'s turn.");
         System.out.println("Call or Fold?");
         String command = keyboard.nextLine();
         if (command.startsWith("c")) {
+            System.out.println("Chose to call.");
             chips -= CALLAMOUNT;
             pot += CALLAMOUNT;
             statusList.add(0, "CALL");
             broadcast(name + " calls.");
         } else {
+            System.out.println("Chose to fold.");
             statusList.add(0, "FOLD");
             broadcast(name + " folds.");
         }
 
         for (int i = 1; i < playerList.size(); i++) {
             String playerName = playerList.get(i);
+            System.out.println(playerName + "'s turn.");
+            broadcast(playerName + "'s turn.");
+
             leftHandler.out.add("FWD," + playerName + ",MAKEBET");
 
             while (true) {
@@ -249,7 +256,9 @@ public class Game {
 
                 String message = rightHandler.in.poll();
                 if (message.startsWith("BET") && message.contains(playerName)) {
+                    System.out.println("AAAAA: " + message);
                     String action = message.split(",")[2];
+                    System.out.println("ACTION: " + action);
 
                     statusList.add(i, action);
                     if (action.equals("CALL")) { pot += CALLAMOUNT; }
@@ -266,9 +275,11 @@ public class Game {
         System.out.println("Call or Fold?");
         String command = keyboard.nextLine();
         if (command.startsWith("c")) {
+            System.out.println("Chose to call.");
             chips -= CALLAMOUNT;
             leftHandler.out.add("BET," + name + ",CALL");
         } else {
+            System.out.println("Chose to fold.");
             leftHandler.out.add("BET," + name + ",FOLD");
         }
     }
@@ -276,7 +287,7 @@ public class Game {
     private void handleBet(String msg) {
         if (!msg.contains(name)) {
             String[] parts = msg.split(",");
-            if (parts[2] == "CALL") {
+            if (parts[2].equals("CALL")) {
                 System.out.println(parts[1] + " calls.");
             } else {
                 System.out.println(parts[1] + " folds.");
