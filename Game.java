@@ -208,10 +208,10 @@ public class Game {
         statusList.clear();
         Random rng = new Random();
 
+        makePlayerList("");
         System.out.println(name + " is the new dealer.");
         broadcast(name + " is the new dealer.");
 
-        makePlayerList("");
         leftHandler.out.add("SMALLBLIND," + SMALLBLIND);
         makeChipList("");
         pot = SMALLBLIND + (SMALLBLIND * 2);
@@ -341,7 +341,12 @@ public class Game {
 
         System.out.println("WINNER: " + winner);
         broadcast("WINNER: " + winner);
-        leftHandler.out.add("FWD," + winner + ",ADDCHIPS," + pot);
+        if (winner.equals(name)) {
+            chips += pot;
+        } else {
+            leftHandler.out.add("FWD," + winner + ",ADDCHIPS," + pot);
+        }
+        
         makeChipList("");
     }
 
@@ -416,6 +421,8 @@ public class Game {
             leftHandler.out.add("HAND," + name + "," + card1 + "," + card2);
         } else if (msg.startsWith("HAND")) {
             handleHand(msg);
+        } else if (msg.startsWith("ADDCHIPS")) {
+            chips += Integer.parseInt(msg.split(",")[1]);
         } else {
             System.out.println(msg);
         }
