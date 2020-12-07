@@ -1,5 +1,6 @@
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -10,7 +11,7 @@ public class Game {
     private final int PORT = 25565;
     private final String DEFIP = "192.168.56.1";
     private final String LOGFILE = "log.log";
-    private final int BIGBLIND = 50;
+    private final int SMALLBLIND = 25;
     private final int STARTINGCHIPS = 1000;
 
     private ServerSocket serverSocket;
@@ -20,11 +21,12 @@ public class Game {
     private SocketHandler leftHandler;
     private Logger logger;
 
-    private String name;
-    private int chips;
     private ArrayList<String> playerList;
     private ArrayList<String> chipList;
-    private int pot;
+    private String name;
+    private int chips;
+    private int card1;
+    private int card2;
 
     public Game(Scanner scanner) throws Exception {
         this.keyboard = scanner;
@@ -196,19 +198,30 @@ public class Game {
     }
 
     private void dealRound() throws Exception {
-        //Random rng = new Random();
+        Random rng = new Random();
         handleCommand("playerlist");
-        leftHandler.out.add("BIGBLIND," + BIGBLIND);
+        leftHandler.out.add("SMALLBLIND," + SMALLBLIND);
         handleCommand("chiplist");
-        pot = BIGBLIND + (BIGBLIND / 2);
+        int pot = SMALLBLIND + (SMALLBLIND * 2);
         System.out.println("POT: " + pot);
         broadcast("POT: " + pot);
+
+        dealCards(rng);
 
         //String flop = "" + rng.nextInt(13);
         System.out.println("insert flop: ");
         String flop = keyboard.nextLine();
         System.out.println("FLOP: " + flop);
         broadcast("FLOP: " + flop);
+    }
+
+    private void dealCards(Random rng) {
+        card1 = rng.nextInt(13);
+        card2 = rng.nextInt(13);
+        System.out.println("Own cards: " + card1 + ", " + card2);
+        for (int i = 1; i < playerList.size(); i++) {
+            leftHandler.out.add("FWD," + playerList.get(i) + ",CARDS," + rng.nextInt(13) + "," + rng.nextInt(13));
+        }
     }
 
     private void broadcast(String message) {
@@ -258,6 +271,8 @@ public class Game {
             smallBlind(msg.split(",")[1]);
         } else if (msg.startsWith("TELLCHIPS")) {
             broadcast(name + " has " + chips + " chips.");
+        } else if (msg.startsWith("CARDS")) {
+            saveCards(msg);
         } else {
             System.out.println(msg);
         }
@@ -277,6 +292,13 @@ public class Game {
         } else if (command.startsWith("right")) {
             rightHandler.out.add(command.substring(6));
         }
+    }
+
+    private void saveCards(String input) {
+        String[] parts = input.split(",");
+        card1 = Integer.parseInt(parts[1]);
+        card2 = Integer.parseInt(parts[2]);
+        System.out.println("Own cards: " + card1 + ", " + card2);
     }
 
     private void makePlayerList(String input) throws Exception {
@@ -367,13 +389,13 @@ public class Game {
         }
     }
 
-    private void bigBlind(String amount) {
+    private void smallBlind(String amount) {
         int integeramount = Integer.parseInt(amount);
         this.chips -= integeramount;
-        leftHandler.out.add("SMALLBLIND," + integeramount / 2);
+        leftHandler.out.add("BIGBLIND," + integeramount * 2);
     }
 
-    private void smallBlind(String amount) {
+    private void bigBlind(String amount) {
         int integeramount = Integer.parseInt(amount);
         this.chips -= integeramount;
     }
