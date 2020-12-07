@@ -36,6 +36,7 @@ public class Game {
         this.name = "tempname";
         this.chips = STARTINGCHIPS;
         this.playerList = new ArrayList<>();
+        this.chipList = new ArrayList<>();
     }
 
     public void start() throws Exception {
