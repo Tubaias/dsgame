@@ -242,8 +242,10 @@ public class Game {
             } else {
                 msg = "";
                 for (int i = 2; i < parts.length; i++) {
-                    msg = msg.concat(parts[i]);
+                    msg = msg.concat(parts[i] + ",");
                 }
+
+                msg = msg.substring(0, msg.length() - 1);
             }
         }
 
