@@ -277,12 +277,12 @@ public class Game {
                 block = true;
                 playerList.clear();
                 playerList.add(null);
-                leftHandler.out.add("PLAYERLIST," + name);
+                leftHandler.out.add("PLAYERLIST," + name + "|chips: " + chips);
             } else if (input.startsWith("PLAYERLIST")) {
                 if (!input.contains(name)) {
                     playerList.clear();
                     playerList.add(null);
-                    leftHandler.out.add(input + "," + name);
+                    leftHandler.out.add(input + "," + name + "|chips: " + chips);
                 } else if (playerList.get(0) == null) {
                     leftHandler.out.add(input);
                     playerList.clear();
