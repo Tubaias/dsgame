@@ -198,6 +198,7 @@ public class Game {
         handleCommand("playerlist");
         leftHandler.out.add("BIGBLIND," + BIGBLIND);
         pot = BIGBLIND + (BIGBLIND / 2);
+        broadcast("TELLCHIPS");
         System.out.println("POT: " + pot);
         broadcast("POT: " + pot);
 
@@ -251,6 +252,8 @@ public class Game {
             bigBlind(msg.split(",")[1]);
         } else if (msg.startsWith("SMALLBLIND")) {
             smallBlind(msg.split(",")[1]);
+        } else if (msg.startsWith("TELLCHIPS")) {
+            broadcast(name + " has " + chips + " chips.");
         } else {
             System.out.println(msg);
         }
@@ -277,12 +280,12 @@ public class Game {
                 block = true;
                 playerList.clear();
                 playerList.add(null);
-                leftHandler.out.add("PLAYERLIST," + name + "|chips: " + chips);
+                leftHandler.out.add("PLAYERLIST," + name);
             } else if (input.startsWith("PLAYERLIST")) {
                 if (!input.contains(name)) {
                     playerList.clear();
                     playerList.add(null);
-                    leftHandler.out.add(input + "," + name + "|chips: " + chips);
+                    leftHandler.out.add(input + "," + name);
                 } else if (playerList.get(0) == null) {
                     leftHandler.out.add(input);
                     playerList.clear();
