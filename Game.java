@@ -202,6 +202,7 @@ public class Game {
         broadcast("POT: " + pot);
 
         //String flop = "" + rng.nextInt(13);
+        System.out.println("insert flop: ");
         String flop = keyboard.nextLine();
         System.out.println("FLOP: " + flop);
         broadcast("FLOP: " + flop);
@@ -251,7 +252,7 @@ public class Game {
         } else if (msg.startsWith("SMALLBLIND")) {
             smallBlind(msg.split(",")[1]);
         } else {
-            System.out.println(source + ": " + msg);
+            System.out.println(msg);
         }
     }
 
