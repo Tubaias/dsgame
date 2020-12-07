@@ -23,6 +23,7 @@ public class Game {
     private String name;
     private int chips;
     private ArrayList<String> playerList;
+    private ArrayList<String> chipList;
     private int pot;
 
     public Game(Scanner scanner) throws Exception {
@@ -197,8 +198,8 @@ public class Game {
         //Random rng = new Random();
         handleCommand("playerlist");
         leftHandler.out.add("BIGBLIND," + BIGBLIND);
+        handleCommand("chiplist");
         pot = BIGBLIND + (BIGBLIND / 2);
-        broadcast("TELLCHIPS");
         System.out.println("POT: " + pot);
         broadcast("POT: " + pot);
 
@@ -248,6 +249,8 @@ public class Game {
         
         if (msg.startsWith("PLAYERLIST")) {
             makePlayerList(msg);
+        } else if (msg.startsWith("CHIPLIST")) {
+            makeChipList(msg);
         } else if (msg.startsWith("BIGBLIND")) {
             bigBlind(msg.split(",")[1]);
         } else if (msg.startsWith("SMALLBLIND")) {
@@ -264,6 +267,8 @@ public class Game {
             dealRound();
         } else if (command.equals("playerlist")) {
             makePlayerList("");
+        } else if (command.equals("chiplist")) {
+            makeChipList("");
         } 
         
         if (command.startsWith("left")) {
@@ -299,6 +304,50 @@ public class Game {
                     System.out.println("Player list: ");
                     for (int i = 0; i < playerList.size(); i++) {
                         System.out.println(i + ": " + playerList.get(i));
+                    }
+                } else {
+                    return;
+                }
+            } 
+
+            if (block) { 
+                while (rightHandler.in.isEmpty()) {
+                    Thread.sleep(100);
+                }
+
+                input = rightHandler.in.poll();
+            } else {
+                break; 
+            }
+        }
+    }
+
+    private void makeChipList(String input) throws Exception {
+        boolean block = false;
+        while (true) {
+            if (input.isEmpty()) {
+                block = true;
+                chipList.clear();
+                chipList.add(null);
+                leftHandler.out.add("CHIPLIST," + name + "|" + chips);
+            } else if (input.startsWith("CHIPLIST")) {
+                if (!input.contains(name)) {
+                    chipList.clear();
+                    chipList.add(null);
+                    leftHandler.out.add(input + "," + name + "|" + chips);
+                } else if (chipList.get(0) == null) {
+                    leftHandler.out.add(input);
+                    chipList.clear();
+        
+                    for (String str : input.split(",")) {
+                        if (!str.equals("CHIPLIST")) {
+                            chipList.add(str);
+                        }
+                    }
+        
+                    System.out.println("Chips: ");
+                    for (int i = 0; i < chipList.size(); i++) {
+                        System.out.println(chipList.get(i) + " chips");
                     }
                 } else {
                     return;
